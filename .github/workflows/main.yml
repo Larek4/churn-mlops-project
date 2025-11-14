@@ -1,0 +1,55 @@
+name: MLOps Retraining Pipeline
+
+# This workflow is triggered by the "repository_dispatch" event
+# which our AWS Lambda function sends.
+on:
+  repository_dispatch:
+    types: [new-data-arrived] # This MUST match the "event_type" in the Lambda
+
+  # Allows you to also run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  train-and-evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Print the S3 file path
+        run: |
+          echo "Workflow triggered by new data!"
+          echo "S3 Bucket: ${{ github.event.client_payload.s3_bucket }}"
+          echo "S3 Key: ${{ github.event.client_payload.s3_key }}"
+
+      - name: 2. Check out this repository's code
+        uses: actions/checkout@v3
+
+      - name: 3. Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 4. Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 5. Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1 # <-- IMPORTANT: Use the same region you set up!
+
+      - name: 6. Run the Training Script (Placeholder)
+        # We will build these scripts in the next step
+        run: |
+          echo "TODO: Download all data from S3"
+          # python scripts/preprocess.py
+          echo "TODO: Run model training"
+          # python scripts/train.py --data-path ...
+          echo "TODO: Evaluate model and save to registry"
+          # python scripts/evaluate.py --model-path ...
+
+      - name: 7. Run a Test Script
+        run: |
+          echo "Hello from GitHub Actions!"

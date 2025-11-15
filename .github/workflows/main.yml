@@ -1,30 +1,26 @@
-# .github/workflows/main.yml (FINAL VERSION)
+# .github/workflows/main.yml (FINAL, ROBUST VERSION)
 
 name: MLOps Retraining Pipeline
 
-# This workflow is triggered by the "repository_dispatch" event
-# which our AWS Lambda function sends.
 on:
   repository_dispatch:
-    types: [new-data-arrived] # This MUST match the "event_type" in the Lambda
-
-  # Allows you to also run this workflow manually from the Actions tab
+    types: [new-data-arrived] 
   workflow_dispatch:
 
-# Set the MLflow server IP for all jobs
+# --- GLOBAL VARIABLES ---
 env:
   MLFLOW_TRACKING_URI: http://16.171.65.31:5000
+  S3_BUCKET_NAME: churn-mlops-project-2025  # <-- NEW: Hard-coded bucket name
 
 jobs:
   train-and-evaluate:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 1. Print the S3 file path
+      - name: 1. Print Event Payload (for debugging)
         run: |
-          echo "Workflow triggered by new data!"
-          echo "S3 Bucket: ${{ github.event.client_payload.s3_bucket }}"
-          echo "S3 Key: ${{ github.event.client_payload.s3_key }}"
+          echo "Workflow triggered!"
+          echo "Event Name: ${{ github.event_name }}"
 
       - name: 2. Check out this repository's code
         uses: actions/checkout@v4
@@ -44,22 +40,18 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1  # <-- FIXED: Set to Stockholm
+          aws-region: eu-north-1  # Stockholm
 
       - name: 6. Download All Data from S3
         run: |
-          # We will download the *entire* S3 bucket to a local folder
-          # In a real project, you'd merge the new file with old, but this is simpler.
-          echo "Downloading all data from s3://${{ github.event.client_payload.s3_bucket }} ..."
-          aws s3 sync s3://${{ github.event.client_payload.s3_bucket }} ./
+          # This now uses the hard-coded env variable, which works for all trigger types
+          echo "Downloading all data from s3://${{ env.S3_BUCKET_NAME }} ..."
+          aws s3 sync s3://${{ env.S3_BUCKET_NAME }} ./
           
           echo "Files downloaded:"
           ls -l
 
       - name: 7. Run Full Pipeline (Train and Evaluate)
         run: |
-          # The Training script will read churn_data_v1.csv and log to MLflow
           python scripts/train.py
-          
-          # The Evaluation script will check F1/Bias and deploy to Registry
           python scripts/evaluate.py

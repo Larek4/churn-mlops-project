@@ -1,6 +1,6 @@
-# .github/workflows/main.yml (FINAL, ROBUST VERSION)
+# .github/workflows/main.yml (FINAL DOCKER VERSION)
 
-name: MLOps Retraining Pipeline
+name: MLOps Retraining Pipeline (Docker)
 
 on:
   repository_dispatch:
@@ -10,48 +10,72 @@ on:
 # --- GLOBAL VARIABLES ---
 env:
   MLFLOW_TRACKING_URI: http://16.171.65.31:5000
-  S3_BUCKET_NAME: churn-mlops-project-2025  # Hard-coded bucket name
+  S3_BUCKET_NAME: churn-mlops-project-2025
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: churn-mlops-api  # The name of our ECR repo
 
 jobs:
-  train-and-evaluate:
+  train-and-push:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: 1. Print Event Payload (for debugging)
-        run: |
-          echo "Workflow triggered!"
-          echo "Event Name: ${{ github.event_name }}"
 
-      - name: 2. Check out this repository's code
+    steps:
+      - name: 1. Check out code
         uses: actions/checkout@v4
 
-      - name: 3. Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12' # <-- FIXED: Matches your server environment
-
-      - name: 4. Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: 5. Configure AWS Credentials
+      - name: 2. Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1  # Stockholm
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: 6. Download All Data from S3
+      - name: 3. Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+
+      - name: 4. Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          IMAGE_TAG: ${{ github.sha }} # Tag the image with the unique git commit hash
         run: |
-          # This now uses the hard-coded env variable
+          # Build the docker image
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest .
+
+          # Push it to our ECR "freezer"
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: 5. Download S3 Data for Training
+        run: |
+          # We still need the data locally for the Docker container to use
           echo "Downloading all data from s3://${{ env.S3_BUCKET_NAME }} ..."
           aws s3 sync s3://${{ env.S3_BUCKET_NAME }} ./
-          
           echo "Files downloaded:"
           ls -l
 
-      - name: 7. Run Full Pipeline (Train and Evaluate)
+      - name: 6. Run Training Script *inside* the Docker container
         run: |
-          python scripts/train.py
-          python scripts/evaluate.py
+          # This is the magic: we run the training *inside* the
+          # exact same "sealed box" that we will use for serving.
+          # We pass in all our secrets and data as environment variables
+          # and mount the current directory (with our data) into the container
+          docker run \
+            -v $(pwd):/app \
+            -e MLFLOW_TRACKING_URI=${{ env.MLFLOW_TRACKING_URI }} \
+            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_DEFAULT_REGION=${{ env.AWS_REGION }} \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest python scripts/train.py
+
+      - name: 7. Run Evaluation Script *inside* the Docker container
+        run: |
+          # We run the evaluation in the *same* container
+          docker run \
+            -v $(pwd):/app \
+            -e MLFLOW_TRACKING_URI=${{ env.MLFLOW_TRACKING_URI }} \
+            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_DEFAULT_REGION=${{ env.AWS_REGION }} \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest python scripts/evaluate.py

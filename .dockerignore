@@ -1,0 +1,23 @@
+# Git files
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local data and artifacts (they come from S3)
+*.csv
+*.pkl
+run_id.txt
+
+# Local environment
+.env
+.venv/
+mlops_env/
+
+# IDE files
+.vscode/
+
+# Local test script
+create_test_set.py

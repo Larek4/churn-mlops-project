@@ -10,7 +10,7 @@ on:
 # --- GLOBAL VARIABLES ---
 env:
   MLFLOW_TRACKING_URI: http://16.171.65.31:5000
-  S3_BUCKET_NAME: churn-mlops-project-2025  # <-- NEW: Hard-coded bucket name
+  S3_BUCKET_NAME: churn-mlops-project-2025  # Hard-coded bucket name
 
 jobs:
   train-and-evaluate:
@@ -25,10 +25,10 @@ jobs:
       - name: 2. Check out this repository's code
         uses: actions/checkout@v4
 
-      - name: 3. Set up Python 3.9
+      - name: 3. Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.12' # <-- FIXED: Matches your server environment
 
       - name: 4. Install dependencies
         run: |
@@ -44,7 +44,7 @@ jobs:
 
       - name: 6. Download All Data from S3
         run: |
-          # This now uses the hard-coded env variable, which works for all trigger types
+          # This now uses the hard-coded env variable
           echo "Downloading all data from s3://${{ env.S3_BUCKET_NAME }} ..."
           aws s3 sync s3://${{ env.S3_BUCKET_NAME }} ./
           

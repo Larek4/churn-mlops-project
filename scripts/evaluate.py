@@ -11,8 +11,7 @@ from sklearn.metrics import f1_score, classification_report
 from mlflow.exceptions import RestException 
 
 # --- Configuration ---
-MLFLOW_TRACKING_URI = "http://51.21.150.132:5000"
-
+MLFLOW_TRACKING_URI = "http://16.171.65.31:5000"
 # FIX: Add the project root to sys.path so it can find test_set.csv 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 

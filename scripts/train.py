@@ -20,7 +20,7 @@ import pandas.api.types
 import utils 
 
 # --- Configuration ---
-MLFLOW_TRACKING_URI = "http://51.21.150.132:5000"
+MLFLOW_TRACKING_URI = "http://16.171.65.31:5000"
 
 
 def get_data(data_path):

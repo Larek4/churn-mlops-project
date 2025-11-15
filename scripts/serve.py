@@ -1,10 +1,11 @@
-# scripts/serve.py
+# scripts/serve.py (FINAL, CORRECTED VERSION)
 
 import mlflow
 import uvicorn
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
+import os # <-- Import os
 
 # --- Configuration ---
 # This is the address of your MLflow server
@@ -13,7 +14,6 @@ MODEL_NAME = "CustomerChurnModel_V2"
 MODEL_STAGE = "Production"
 
 # --- Pydantic Model for Input Validation ---
-# This defines the data structure the API expects
 class CustomerData(BaseModel):
     gender: str
     SeniorCitizen: int
@@ -38,9 +38,12 @@ class CustomerData(BaseModel):
 # --- FastAPI App ---
 app = FastAPI()
 
+# --- *** THE CRITICAL FIX *** ---
+# Set the MLflow Tracking URI so the client knows where the server is
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+# ---------------------------------
+
 # --- Load the Production Model ---
-# This is the core of "Continuous Deployment"
-# It loads the model marked "Production" from the MLflow Registry
 print(f"Loading model '{MODEL_NAME}' from stage '{MODEL_STAGE}'...")
 model = mlflow.pyfunc.load_model(
     model_uri=f"models:/{MODEL_NAME}/{MODEL_STAGE}"
@@ -79,6 +82,4 @@ def predict_churn(data: CustomerData):
 
 # --- Run the API ---
 if __name__ == "__main__":
-    # Runs the API on host 0.0.0.0 (all IPs) and port 8000
-    # This is the port we opened in the AWS Security Group
     uvicorn.run(app, host="0.0.0.0", port=8000)

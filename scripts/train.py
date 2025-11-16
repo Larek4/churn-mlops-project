@@ -16,7 +16,7 @@ from imblearn.over_sampling import SMOTE
 import utils 
 
 # This will now use the IP from the GitHub Action's environment variable
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://51.20.83.241:5000") # <-- NEW IP
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://13.51.241.216:5000") # <-- NEW IP
 
 def get_data(data_path):
     """Loads and performs initial cleaning on the raw data."""

@@ -9,7 +9,7 @@ import os
 
 # --- Configuration ---
 # This IP is now the *default* if the env var isn't set
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://51.20.83.241:5000") # <-- NEW IP
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://13.51.241.216:5000") # <-- NEW IP
 MODEL_NAME = "CustomerChurnModel_V2"
 MODEL_STAGE = "Production"
 

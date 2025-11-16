@@ -8,7 +8,7 @@ from sklearn.metrics import f1_score
 from mlflow.exceptions import RestException 
 
 # This will now use the IP from the GitHub Action's environment variable
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://51.20.83.241:5000") # <-- NEW IP
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://13.51.241.216:5000") # <-- NEW IP
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def log_and_register_model(X_test, y_test, model_path, run_id):

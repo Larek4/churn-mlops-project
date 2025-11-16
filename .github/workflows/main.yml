@@ -9,7 +9,7 @@ on:
 
 # --- GLOBAL VARIABLES ---
 env:
-  MLFLOW_TRACKING_URI: http://51.20.83.241:5000
+  MLFLOW_TRACKING_URI: http://13.51.241.216:5000
   S3_BUCKET_NAME: churn-mlops-project-2025
   AWS_REGION: eu-north-1
   ECR_REPOSITORY: churn-mlops-api  # The name of our ECR repo

@@ -14,4 +14,4 @@ TARGET_COLUMN = 'Churn'
 
 # --- Model Constants ---
 # NOTE: This name must be unique. We are using V2 due to previous failures.
-MODEL_NAME = "CustomerChurnModel_V2"
+MODEL_NAME = "CustomerChurnModel_V3"
